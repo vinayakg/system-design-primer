@@ -1,14 +1,12 @@
-# 设计 Pastebin.com (或者 Bit.ly)
+# 设计 Pastebin.com \(或者 Bit.ly\)
 
-**注意: 为了避免重复，当前文档会直接链接到[系统设计主题](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题的索引)的相关区域，请参考链接内容以获得综合的讨论点、权衡和替代方案。**
+**注意: 为了避免重复，当前文档会直接链接到**[**系统设计主题**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题的索引)**的相关区域，请参考链接内容以获得综合的讨论点、权衡和替代方案。**
 
 **设计 Bit.ly** - 是一个类似的问题，区别是 pastebin 需要存储的是 paste 的内容，而不是原始的未短化的 url。
 
 ## 第一步：概述用例和约束
 
-> 收集这个问题的需求和范畴。
-> 问相关问题来明确用例和约束。
-> 讨论一些假设。
+> 收集这个问题的需求和范畴。 问相关问题来明确用例和约束。 讨论一些假设。
 
 因为没有面试官来明确这些问题，所以我们自己将定义一些用例和约束。
 
@@ -61,7 +59,7 @@
   * `paste_path` - 255 bytes
   * 总共 = ~1.27 KB
 * 每个月新的 paste 内容在 12.7GB
-  * (1.27 * 10000000)KB / 月的 paste
+  * \(1.27 \* 10000000\)KB / 月的 paste
   * 三年内将近 450GB 的新 paste 内容
   * 三年内 3.6 亿短链接
   * 假设大部分都是新的 paste，而不是需要更新已存在的 paste
@@ -116,7 +114,7 @@ paste_path varchar(255) NOT NULL
 PRIMARY KEY(shortlink)
 ```
 
-我们将在 `shortlink` 字段和 `created_at` 字段上创建一个[数据库索引](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#使用正确的索引)，用来提高查询的速度（避免因为扫描全表导致的长时间查询）并将数据保存在内存中，从内存里面顺序读取 1MB 的数据需要大概 250 微秒，而从 SSD 上读取则需要花费 4 倍的时间，从硬盘上则需要花费 80 倍的时间。<sup><a href=https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#每个程序员都应该知道的延迟数 > 1</a></sup>
+我们将在 `shortlink` 字段和 `created_at` 字段上创建一个[数据库索引](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#使用正确的索引)，用来提高查询的速度（避免因为扫描全表导致的长时间查询）并将数据保存在内存中，从内存里面顺序读取 1MB 的数据需要大概 250 微秒，而从 SSD 上读取则需要花费 4 倍的时间，从硬盘上则需要花费 80 倍的时间。 [1](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#每个程序员都应该知道的延迟数)
 
 为了生成唯一的 url，我们可以：
 
@@ -128,7 +126,7 @@ PRIMARY KEY(shortlink)
   * 对于 urls，使用 Base 62 编码 `[a-zA-Z0-9]` 是比较合适的
   * 对于每一个原始输入只会有一个 hash 结果，Base 62 是确定的（不涉及随机性）
   * Base 64 是另外一个流行的编码方案，但是对于 urls，会因为额外的 `+` 和 `-` 字符串而产生一些问题
-  * 以下 [Base 62 伪代码](http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener) 执行的时间复杂度是 O(k)，k 是数字的数量 = 7：
+  * 以下 [Base 62 伪代码](http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener) 执行的时间复杂度是 O\(k\)，k 是数字的数量 = 7：
 
 ```python
 def base_encode(num, base=62):
@@ -148,13 +146,13 @@ url = base_encode(md5(ip_address+timestamp))[:URL_LENGTH]
 
 我们将会用一个公开的 [**REST 风格接口**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)：
 
-```shell
+```text
 $ curl -X POST --data '{"expiration_length_in_minutes":"60", \"paste_contents":"Hello World!"}' https://pastebin.com/api/v1/paste
 ```
 
 Response:
 
-```json
+```javascript
 {
     "shortlink": "foobar"
 }
@@ -173,13 +171,13 @@ Response:
 
 REST API：
 
-```shell
+```text
 curl https://pastebin.com/api/v1/paste?shortlink=foobar
 ```
 
 Response:
 
-```json
+```javascript
 {
     "paste_contents": "Hello World",
     "created_at": "YYYY-MM-DD HH:MM:SS",
@@ -226,8 +224,7 @@ class HitCounts(MRJob):
 
 ### 用例： 服务删除过期的 pastes
 
-为了删除过期的 pastes，我们可以直接搜索 **SQL 数据库** 中所有的过期时间比当前时间更早的记录，
-所有过期的记录将从这张表里面删除（或者将其标记为过期）。
+为了删除过期的 pastes，我们可以直接搜索 **SQL 数据库** 中所有的过期时间比当前时间更早的记录， 所有过期的记录将从这张表里面删除（或者将其标记为过期）。
 
 ## 第四步：扩展这个设计
 
@@ -237,7 +234,7 @@ class HitCounts(MRJob):
 
 **重要提示: 不要简单的从最初的设计直接跳到最终的设计**
 
-说明您将迭代地执行这样的操作：1)**Benchmark/Load 测试**，2)**Profile** 出瓶颈，3)在评估替代方案和权衡时解决瓶颈，4)重复前面，可以参考[在 AWS 上设计一个可以支持百万用户的系统](../scaling_aws/README.md)这个用来解决如何迭代地扩展初始设计的例子。
+说明您将迭代地执行这样的操作：1\)**Benchmark/Load 测试**，2\)**Profile** 出瓶颈，3\)在评估替代方案和权衡时解决瓶颈，4\)重复前面，可以参考[在 AWS 上设计一个可以支持百万用户的系统](../scaling_aws/)这个用来解决如何迭代地扩展初始设计的例子。
 
 重要的是讨论在初始设计中可能遇到的瓶颈，以及如何解决每个瓶颈。比如，在多个 **Web 服务器** 上添加 **负载平衡器** 可以解决哪些问题？ **CDN** 解决哪些问题？**Master-Slave Replicas** 解决哪些问题? 替代方案是什么和怎么对每一个替代方案进行权衡比较？
 
@@ -252,7 +249,7 @@ class HitCounts(MRJob):
 * [反向代理（web 服务器）](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#反向代理web-服务器)
 * [应用层](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用层)
 * [缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存)
-* [关系型数据库管理系统 (RDBMS)](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#关系型数据库管理系统rdbms)
+* [关系型数据库管理系统 \(RDBMS\)](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#关系型数据库管理系统rdbms)
 * [SQL write master-slave failover](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#故障切换)
 * [主从复制](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#主从复制)
 * [一致性模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#一致性模式)
@@ -262,9 +259,9 @@ class HitCounts(MRJob):
 
 一个像 Amazon S3 这样的 **对象存储**，可以轻松处理每月 12.7 GB 的新内容约束。
 
-要处理 *平均* 每秒 40 读请求(峰值更高)，其中热点内容的流量应该由 **内存缓存** 处理，而不是数据库。**内存缓存** 对于处理分布不均匀的流量和流量峰值也很有用。只要副本没有陷入复制写的泥潭，**SQL Read Replicas** 应该能够处理缓存丢失。
+要处理 _平均_ 每秒 40 读请求\(峰值更高\)，其中热点内容的流量应该由 **内存缓存** 处理，而不是数据库。**内存缓存** 对于处理分布不均匀的流量和流量峰值也很有用。只要副本没有陷入复制写的泥潭，**SQL Read Replicas** 应该能够处理缓存丢失。
 
-对于单个 **SQL Write Master-Slave**，*平均* 每秒 4paste 写入 (峰值更高) 应该是可以做到的。否则，我们需要使用额外的 SQL 扩展模式:
+对于单个 **SQL Write Master-Slave**，_平均_ 每秒 4paste 写入 \(峰值更高\) 应该是可以做到的。否则，我们需要使用额外的 SQL 扩展模式:
 
 * [联合](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#联合)
 * [分片](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#分片)
@@ -328,3 +325,4 @@ class HitCounts(MRJob):
 
 * 继续对系统进行基准测试和监控，以在瓶颈出现时解决它们
 * 扩展是一个迭代的过程
+

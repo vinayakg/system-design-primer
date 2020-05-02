@@ -1,12 +1,10 @@
 # 为社交网络设计数据结构
 
-**注释：为了避免重复，这篇文章的链接直接关联到 [系统设计主题](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) 的相关章节。为一讨论要点、折中方案和可选方案做参考。**
+**注释：为了避免重复，这篇文章的链接直接关联到** [**系统设计主题**](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) **的相关章节。为一讨论要点、折中方案和可选方案做参考。**
 
 ## 第 1 步：用例和约束概要
 
-> 收集需求并调查问题。
-> 通过提问清晰用例和约束。
-> 讨论假设。
+> 收集需求并调查问题。 通过提问清晰用例和约束。 讨论假设。
 
 如果没有面试官提出明确的问题，我们将自己定义一些用例和约束条件。
 
@@ -22,7 +20,7 @@
 #### 状态假设
 
 * 流量分布不均
-    * 某些搜索比别的更热门，同时某些搜索仅执行一次
+  * 某些搜索比别的更热门，同时某些搜索仅执行一次
 * 图数据不适用单一机器
 * 图的边没有权重
 * 1 千万用户
@@ -36,7 +34,7 @@
 **向你的面试官厘清你是否应该做粗略的使用计算**
 
 * 50 亿朋友关系
-    * 1 亿用户 * 平均每人 50 个朋友
+  * 1 亿用户 \* 平均每人 50 个朋友
 * 每秒 400 次搜索请求
 
 便捷的转换指南：
@@ -104,11 +102,11 @@ class Graph(Graph):
 * **客户端** 向 **服务器** 发送请求，**服务器** 作为 [反向代理](https://github.com/donnemartin/system-design-primer#reverse-proxy-web-server)
 * **搜索 API** 服务器向 **用户图服务** 转发请求
 * **用户图服务** 有以下功能：
-    * 使用 **查询服务** 找到当前用户信息存储的 **人员服务器**
-    * 找到适当的 **人员服务器** 检索当前用户的 `friend_ids` 列表
-    * 把当前用户作为 `source` 运行 BFS 搜索算法同时 当前用户的 `friend_ids` 作为每个 `adjacent_node` 的 ids
-    * 给定 id 获取 `adjacent_node`:
-        * **用户图服务** 将 **再次** 和 **查询服务** 通讯，最后判断出和给定 id 相匹配的存储 `adjacent_node` 的 **人员服务器**（有待优化）
+  * 使用 **查询服务** 找到当前用户信息存储的 **人员服务器**
+  * 找到适当的 **人员服务器** 检索当前用户的 `friend_ids` 列表
+  * 把当前用户作为 `source` 运行 BFS 搜索算法同时 当前用户的 `friend_ids` 作为每个 `adjacent_node` 的 ids
+  * 给定 id 获取 `adjacent_node`:
+    * **用户图服务** 将 **再次** 和 **查询服务** 通讯，最后判断出和给定 id 相匹配的存储 `adjacent_node` 的 **人员服务器**（有待优化）
 
 **和你的面试官说清你应该写的代码量**
 
@@ -219,13 +217,13 @@ class UserGraphService(object):
 
 我们用的是公共的 [**REST API**](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)：
 
-```
+```text
 $ curl https://social.com/api/v1/friend_search?person_id=1234
 ```
 
 响应：
 
-```
+```text
 {
     "person_id": "100",
     "name": "foo",
@@ -253,7 +251,7 @@ $ curl https://social.com/api/v1/friend_search?person_id=1234
 
 **重要：别简化从最初设计到最终设计的过程！**
 
-你将要做的是：1) **基准/负载 测试**， 2) 瓶颈 **概述**， 3) 当评估可选和折中方案时定位瓶颈，4) 重复。以 [在 AWS 上设计支持百万级到千万级用户的系统](../scaling_aws/README.md) 为参考迭代地扩展最初设计。
+你将要做的是：1\) **基准/负载 测试**， 2\) 瓶颈 **概述**， 3\) 当评估可选和折中方案时定位瓶颈，4\) 重复。以 [在 AWS 上设计支持百万级到千万级用户的系统](../scaling_aws/) 为参考迭代地扩展最初设计。
 
 讨论最初设计可能遇到的瓶颈和处理方法十分重要。例如，什么问题可以通过添加多台 **Web 服务器** 作为 **负载均衡** 解决？**CDN**？**主从副本**？每个问题都有哪些替代和 **折中** 方案？
 
@@ -270,14 +268,14 @@ $ curl https://social.com/api/v1/friend_search?person_id=1234
 * [一致性模式](https://github.com/donnemartin/system-design-primer#consistency-patterns)
 * [可用性模式](https://github.com/donnemartin/system-design-primer#availability-patterns)
 
-解决 **平均** 每秒 400 次请求的限制（峰值），人员数据可以存在例如 Redis 或 Memcached 这样的 **内存** 中以减少响应次数和下游流量通信服务。这尤其在用户执行多次连续查询和查询哪些广泛连接的人时十分有用。从内存中读取 1MB 数据大约要 250 微秒，从 SSD 中读取同样大小的数据时间要长 4 倍，从硬盘要长 80 倍。<sup><a href=https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know>1</a></sup>
+解决 **平均** 每秒 400 次请求的限制（峰值），人员数据可以存在例如 Redis 或 Memcached 这样的 **内存** 中以减少响应次数和下游流量通信服务。这尤其在用户执行多次连续查询和查询哪些广泛连接的人时十分有用。从内存中读取 1MB 数据大约要 250 微秒，从 SSD 中读取同样大小的数据时间要长 4 倍，从硬盘要长 80 倍。[1](https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know)
 
 以下是进一步优化方案：
 
 * 在 **内存** 中存储完整的或部分的BFS遍历加快后续查找
 * 在 **NoSQL 数据库** 中批量离线计算并存储完整的或部分的BFS遍历加快后续查找
 * 在同一台 **人员服务器** 上托管批处理同一批朋友查找减少机器跳转
-    * 通过地理位置 [拆分](https://github.com/donnemartin/system-design-primer#sharding) **人员服务器** 来进一步优化，因为朋友通常住得都比较近
+  * 通过地理位置 [拆分](https://github.com/donnemartin/system-design-primer#sharding) **人员服务器** 来进一步优化，因为朋友通常住得都比较近
 * 同时进行两个 BFS 查找，一个从 source 开始，一个从 destination 开始，然后合并两个路径
 * 从有庞大朋友圈的人开始找起，这样更有可能减小当前用户和搜索目标之间的 [离散度数](https://en.wikipedia.org/wiki/Six_degrees_of_separation)
 * 在询问用户是否继续查询之前设置基于时间或跳跃数阈值，当在某些案例中搜索耗费时间过长时。
@@ -306,19 +304,19 @@ $ curl https://social.com/api/v1/friend_search?person_id=1234
 ### 缓存
 
 * 缓存到哪里
-    * [客户端缓存](https://github.com/donnemartin/system-design-primer#client-caching)
-    * [CDN 缓存](https://github.com/donnemartin/system-design-primer#cdn-caching)
-    * [Web 服务缓存](https://github.com/donnemartin/system-design-primer#web-server-caching)
-    * [数据库缓存](https://github.com/donnemartin/system-design-primer#database-caching)
-    * [应用缓存](https://github.com/donnemartin/system-design-primer#application-caching)
+  * [客户端缓存](https://github.com/donnemartin/system-design-primer#client-caching)
+  * [CDN 缓存](https://github.com/donnemartin/system-design-primer#cdn-caching)
+  * [Web 服务缓存](https://github.com/donnemartin/system-design-primer#web-server-caching)
+  * [数据库缓存](https://github.com/donnemartin/system-design-primer#database-caching)
+  * [应用缓存](https://github.com/donnemartin/system-design-primer#application-caching)
 * 缓存什么
-    * [数据库请求层缓存](https://github.com/donnemartin/system-design-primer#caching-at-the-database-query-level)
-    * [对象层缓存](https://github.com/donnemartin/system-design-primer#caching-at-the-object-level)
+  * [数据库请求层缓存](https://github.com/donnemartin/system-design-primer#caching-at-the-database-query-level)
+  * [对象层缓存](https://github.com/donnemartin/system-design-primer#caching-at-the-object-level)
 * 何时更新缓存
-    * [预留缓存](https://github.com/donnemartin/system-design-primer#cache-aside)
-    * [完全写入](https://github.com/donnemartin/system-design-primer#write-through)
-    * [延迟写 (写回)](https://github.com/donnemartin/system-design-primer#write-behind-write-back)
-    * [事先更新](https://github.com/donnemartin/system-design-primer#refresh-ahead)
+  * [预留缓存](https://github.com/donnemartin/system-design-primer#cache-aside)
+  * [完全写入](https://github.com/donnemartin/system-design-primer#write-through)
+  * [延迟写 \(写回\)](https://github.com/donnemartin/system-design-primer#write-behind-write-back)
+  * [事先更新](https://github.com/donnemartin/system-design-primer#refresh-ahead)
 
 ### 异步性和微服务
 
@@ -330,8 +328,8 @@ $ curl https://social.com/api/v1/friend_search?person_id=1234
 ### 沟通
 
 * 关于折中方案的讨论:
-    * 客户端的外部通讯 - [遵循 REST 的 HTTP APIs](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)
-    * 内部通讯 - [RPC](https://github.com/donnemartin/system-design-primer#remote-procedure-call-rpc)
+  * 客户端的外部通讯 - [遵循 REST 的 HTTP APIs](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)
+  * 内部通讯 - [RPC](https://github.com/donnemartin/system-design-primer#remote-procedure-call-rpc)
 * [服务探索](https://github.com/donnemartin/system-design-primer#service-discovery)
 
 ### 安全性
@@ -346,3 +344,4 @@ $ curl https://social.com/api/v1/friend_search?person_id=1234
 
 * 继续基准测试并监控你的系统以解决出现的瓶颈问题
 * 扩展是一个迭代的过程
+

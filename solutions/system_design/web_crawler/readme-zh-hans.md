@@ -1,6 +1,6 @@
 # 设计一个网页爬虫
 
-**注意：这个文档中的链接会直接指向[系统设计主题索引](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题的索引)中的有关部分，以避免重复的内容。你可以参考链接的相关内容，来了解其总的要点、方案的权衡取舍以及可选的替代方案。**
+**注意：这个文档中的链接会直接指向**[**系统设计主题索引**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题的索引)**中的有关部分，以避免重复的内容。你可以参考链接的相关内容，来了解其总的要点、方案的权衡取舍以及可选的替代方案。**
 
 ## 第一步：简述用例与约束条件
 
@@ -13,11 +13,11 @@
 #### 我们把问题限定在仅处理以下用例的范围中
 
 * **服务** 抓取一系列链接：
-    * 生成包含搜索词的网页倒排索引
-    * 生成页面的标题和摘要信息
-        * 页面标题和摘要都是静态的，它们不会根据搜索词改变
+  * 生成包含搜索词的网页倒排索引
+  * 生成页面的标题和摘要信息
+    * 页面标题和摘要都是静态的，它们不会根据搜索词改变
 * **用户** 输入搜索词后，可以看到相关的搜索结果列表，列表每一项都包含由网页爬虫生成的页面标题及摘要
-    * 只给该用例绘制出概要组件和交互说明，无需讨论细节
+  * 只给该用例绘制出概要组件和交互说明，无需讨论细节
 * **服务** 具有高可用性
 
 #### 无需考虑
@@ -31,17 +31,17 @@
 #### 提出假设
 
 * 搜索流量分布不均
-    * 有些搜索词非常热门，有些则非常冷门
+  * 有些搜索词非常热门，有些则非常冷门
 * 只支持匿名用户
 * 用户很快就能看到搜索结果
 * 网页爬虫不应该陷入死循环
-    * 当爬虫路径包含环的时候，将会陷入死循环
+  * 当爬虫路径包含环的时候，将会陷入死循环
 * 抓取 10 亿个链接
-    * 要定期重新抓取页面以确保新鲜度
-    * 平均每周重新抓取一次，网站越热门，那么重新抓取的频率越高
-        * 每月抓取 40 亿个链接
-    * 每个页面的平均存储大小：500 KB
-        * 简单起见，重新抓取的页面算作新页面
+  * 要定期重新抓取页面以确保新鲜度
+  * 平均每周重新抓取一次，网站越热门，那么重新抓取的频率越高
+    * 每月抓取 40 亿个链接
+  * 每个页面的平均存储大小：500 KB
+    * 简单起见，重新抓取的页面算作新页面
 * 每月搜索量 1000 亿次
 
 用更传统的系统来练习 —— 不要使用 [solr](http://lucene.apache.org/solr/) 、[nutch](http://nutch.apache.org/) 之类的现成系统。
@@ -51,8 +51,8 @@
 **如果你需要进行粗略的用量计算，请向你的面试官说明。**
 
 * 每月存储 2 PB 页面
-    * 每月抓取 40 亿个页面，每个页面 500 KB
-    * 三年存储 72 PB 页面
+  * 每月抓取 40 亿个页面，每个页面 500 KB
+  * 三年存储 72 PB 页面
 * 每秒 1600 次写请求
 * 每秒 40000 次搜索请求
 
@@ -81,18 +81,18 @@
 
 我们可以将 `links_to_crawl` 和 `crawled_links` 记录在键-值型 **NoSQL 数据库**中。对于 `crawled_links` 中已排序的链接，我们可以使用 [Redis](https://redis.io/) 的有序集合来维护网页链接的排名。我们应当在 [选择 SQL 还是 NoSQL 的问题上，讨论有关使用场景以及利弊 ](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#sql-还是-nosql)。
 
-*  **爬虫服务**按照以下流程循环处理每一个页面链接：
-    * 选取排名最靠前的待抓取链接
-        * 在  **NoSQL 数据库**的 `crawled_links` 中，检查待抓取页面的签名是否与某个已抓取页面的签名相似
-            * 若存在，则降低该页面链接的优先级
-                * 这样做可以避免陷入死循环
-                * 继续（进入下一次循环）
-            * 若不存在，则抓取该链接
-                * 在**倒排索引服务**任务队列中，新增一个生成[倒排索引](https://en.wikipedia.org/wiki/Search_engine_indexing)任务。
-                * 在**文档服务**任务队列中，新增一个生成静态标题和摘要的任务。
-                * 生成页面签名
-                * 在 **NoSQL 数据库**的 `links_to_crawl` 中删除该链接
-                * 在 **NoSQL 数据库**的 `crawled_links` 中插入该链接以及页面签名
+* **爬虫服务**按照以下流程循环处理每一个页面链接：
+  * 选取排名最靠前的待抓取链接
+    * 在  **NoSQL 数据库**的 `crawled_links` 中，检查待抓取页面的签名是否与某个已抓取页面的签名相似
+      * 若存在，则降低该页面链接的优先级
+        * 这样做可以避免陷入死循环
+        * 继续（进入下一次循环）
+      * 若不存在，则抓取该链接
+        * 在**倒排索引服务**任务队列中，新增一个生成[倒排索引](https://en.wikipedia.org/wiki/Search_engine_indexing)任务。
+        * 在**文档服务**任务队列中，新增一个生成静态标题和摘要的任务。
+        * 生成页面签名
+        * 在 **NoSQL 数据库**的 `links_to_crawl` 中删除该链接
+        * 在 **NoSQL 数据库**的 `crawled_links` 中插入该链接以及页面签名
 
 **向面试官了解你需要写多少代码**。
 
@@ -209,28 +209,28 @@ class RemoveDuplicateUrls(MRJob):
 
 ### 用例：用户输入搜索词后，可以看到相关的搜索结果列表，列表每一项都包含由网页爬虫生成的页面标题及摘要
 
-*  **客户端**向运行[反向代理](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#反向代理web-服务器)的 **Web 服务器**发送一个请求
+* **客户端**向运行[反向代理](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#反向代理web-服务器)的 **Web 服务器**发送一个请求
 * **Web 服务器** 发送请求到 **Query API** 服务器
 * **查询 API** 服务将会做这些事情：
-    * 解析查询参数
-        * 删除 HTML 标记
-        * 将文本分割成词组 （译注： 分词处理）
-        * 修正错别字
-        * 规范化大小写
-        * 将搜索词转换为布尔运算
-    * 使用**倒排索引服务**来查找匹配查询的文档
-        * **倒排索引服务**对匹配到的结果进行排名，然后返回最符合的结果
-    * 使用**文档服务**返回文章标题与摘要
+  * 解析查询参数
+    * 删除 HTML 标记
+    * 将文本分割成词组 （译注： 分词处理）
+    * 修正错别字
+    * 规范化大小写
+    * 将搜索词转换为布尔运算
+  * 使用**倒排索引服务**来查找匹配查询的文档
+    * **倒排索引服务**对匹配到的结果进行排名，然后返回最符合的结果
+  * 使用**文档服务**返回文章标题与摘要
 
-我们使用  [**REST API**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest) 与客户端通信：
+我们使用 [**REST API**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest) 与客户端通信：
 
-```
+```text
 $ curl https://search.com/api/v1/search?query=hello+world
 ```
 
 响应内容:
 
-```
+```text
 {
     "title": "foo's title",
     "snippet": "foo's snippet",
@@ -250,7 +250,6 @@ $ curl https://search.com/api/v1/search?query=hello+world
 
 对于服务器内部通信，我们可以使用 [远程过程调用协议（RPC）](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
 
-
 ## 第四步：架构扩展
 
 > 根据限制条件，找到并解决瓶颈。
@@ -259,7 +258,7 @@ $ curl https://search.com/api/v1/search?query=hello+world
 
 **重要提示：不要直接从最初设计跳到最终设计！**
 
-现在你要 1) **基准测试、负载测试**。2) **分析、描述**性能瓶颈。3) 在解决瓶颈问题的同时，评估替代方案、权衡利弊。4) 重复以上步骤。请阅读[设计一个系统，并将其扩大到为数以百万计的 AWS 用户服务](../scaling_aws/README.md) 来了解如何逐步扩大初始设计。
+现在你要 1\) **基准测试、负载测试**。2\) **分析、描述**性能瓶颈。3\) 在解决瓶颈问题的同时，评估替代方案、权衡利弊。4\) 重复以上步骤。请阅读[设计一个系统，并将其扩大到为数以百万计的 AWS 用户服务](../scaling_aws/) 来了解如何逐步扩大初始设计。
 
 讨论初始设计可能遇到的瓶颈及相关解决方案是很重要的。例如加上一套配备多台 **Web 服务器**的**负载均衡器**是否能够解决问题？**CDN**呢？**主从复制**呢？它们各自的替代方案和需要**权衡**的利弊又有哪些呢？
 
@@ -277,15 +276,14 @@ $ curl https://search.com/api/v1/search?query=hello+world
 * [一致性模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#一致性模式)
 * [可用性模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#可用性模式)
 
-有些搜索词非常热门，有些则非常冷门。热门的搜索词可以通过诸如 Redis 或者 Memcached 之类的**内存缓存**来缩短响应时间，避免**倒排索引服务**以及**文档服务**过载。**内存缓存**同样适用于流量分布不均匀以及流量短时高峰问题。从内存中读取 1 MB  连续数据大约需要 250 微秒，而从 SSD 读取同样大小的数据要花费 4 倍的时间，从机械硬盘读取需要花费 80 倍以上的时间。<sup><a href="https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#每个程序员都应该知道的延迟数">1</a></sup>
-
+有些搜索词非常热门，有些则非常冷门。热门的搜索词可以通过诸如 Redis 或者 Memcached 之类的**内存缓存**来缩短响应时间，避免**倒排索引服务**以及**文档服务**过载。**内存缓存**同样适用于流量分布不均匀以及流量短时高峰问题。从内存中读取 1 MB 连续数据大约需要 250 微秒，而从 SSD 读取同样大小的数据要花费 4 倍的时间，从机械硬盘读取需要花费 80 倍以上的时间。[1](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#每个程序员都应该知道的延迟数)
 
 以下是优化**爬虫服务**的其他建议：
 
 * 为了处理数据大小问题以及网络请求负载，**倒排索引服务**和**文档服务**可能需要大量应用数据分片和数据复制。
 * DNS 查询可能会成为瓶颈，**爬虫服务**最好专门维护一套定期更新的 DNS 查询服务。
 * 借助于[连接池](https://en.wikipedia.org/wiki/Connection_pool)，即同时维持多个开放网络连接，可以提升**爬虫服务**的性能并减少内存使用量。
-    * 改用 [UDP](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#用户数据报协议udp) 协议同样可以提升性能
+  * 改用 [UDP](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#用户数据报协议udp) 协议同样可以提升性能
 * 网络爬虫受带宽影响较大，请确保带宽足够维持高吞吐量。
 
 ## 其它要点
@@ -308,23 +306,22 @@ $ curl https://search.com/api/v1/search?query=hello+world
 * [图数据库](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#图数据库)
 * [SQL vs NoSQL](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#sql-还是-nosql)
 
-
 ### 缓存
 
 * 在哪缓存
-    * [客户端缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#客户端缓存)
-    * [CDN 缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#cdn-缓存)
-    * [Web 服务器缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#web-服务器缓存)
-    * [数据库缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库缓存)
-    * [应用缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用缓存)
+  * [客户端缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#客户端缓存)
+  * [CDN 缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#cdn-缓存)
+  * [Web 服务器缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#web-服务器缓存)
+  * [数据库缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库缓存)
+  * [应用缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用缓存)
 * 什么需要缓存
-    * [数据库查询级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库查询级别的缓存)
-    * [对象级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#对象级别的缓存)
+  * [数据库查询级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库查询级别的缓存)
+  * [对象级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#对象级别的缓存)
 * 何时更新缓存
-    * [缓存模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存模式)
-    * [直写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#直写模式)
-    * [回写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#回写模式)
-    * [刷新](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#刷新)
+  * [缓存模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存模式)
+  * [直写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#直写模式)
+  * [回写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#回写模式)
+  * [刷新](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#刷新)
 
 ### 异步与微服务
 
@@ -336,15 +333,13 @@ $ curl https://search.com/api/v1/search?query=hello+world
 ### 通信
 
 * 可权衡选择的方案：
-    * 与客户端的外部通信 - [使用 REST 作为 HTTP API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)
-    * 内部通信 - [RPC](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
+  * 与客户端的外部通信 - [使用 REST 作为 HTTP API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)
+  * 内部通信 - [RPC](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
 * [服务发现](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#服务发现)
-
 
 ### 安全性
 
 请参阅[安全](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#安全)。
-
 
 ### 延迟数值
 
@@ -354,3 +349,4 @@ $ curl https://search.com/api/v1/search?query=hello+world
 
 * 持续进行基准测试并监控你的系统，以解决他们提出的瓶颈问题。
 * 架构扩展是一个迭代的过程。
+

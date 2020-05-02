@@ -1,12 +1,10 @@
 # Design Amazon's sales rank by category feature
 
-*Note: This document links directly to relevant areas found in the [system design topics](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) to avoid duplication.  Refer to the linked content for general talking points, tradeoffs, and alternatives.*
+_Note: This document links directly to relevant areas found in the_ [_system design topics_](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) _to avoid duplication. Refer to the linked content for general talking points, tradeoffs, and alternatives._
 
 ## Step 1: Outline use cases and constraints
 
-> Gather requirements and scope the problem.
-> Ask questions to clarify use cases and constraints.
-> Discuss assumptions.
+> Gather requirements and scope the problem. Ask questions to clarify use cases and constraints. Discuss assumptions.
 
 Without an interviewer to address clarifying questions, we'll define some use cases and constraints.
 
@@ -21,7 +19,7 @@ Without an interviewer to address clarifying questions, we'll define some use ca
 #### Out of scope
 
 * The general e-commerce site
-    * Design components only for calculating sales rank
+  * Design components only for calculating sales rank
 
 ### Constraints and assumptions
 
@@ -32,7 +30,7 @@ Without an interviewer to address clarifying questions, we'll define some use ca
 * Items cannot change categories
 * There are no subcategories ie `foo/bar/baz`
 * Results must be updated hourly
-    * More popular products might need to be updated more frequently
+  * More popular products might need to be updated more frequently
 * 10 million products
 * 1000 categories
 * 1 billion transactions per month
@@ -44,18 +42,18 @@ Without an interviewer to address clarifying questions, we'll define some use ca
 **Clarify with your interviewer if you should run back-of-the-envelope usage calculations.**
 
 * Size per transaction:
-    * `created_at` - 5 bytes
-    * `product_id` - 8 bytes
-    * `category_id` - 4 bytes
-    * `seller_id` - 8 bytes
-    * `buyer_id` - 8 bytes
-    * `quantity` - 4 bytes
-    * `total_price` - 5 bytes
-    * Total: ~40 bytes
+  * `created_at` - 5 bytes
+  * `product_id` - 8 bytes
+  * `category_id` - 4 bytes
+  * `seller_id` - 8 bytes
+  * `buyer_id` - 8 bytes
+  * `quantity` - 4 bytes
+  * `total_price` - 5 bytes
+  * Total: ~40 bytes
 * 40 GB of new transaction content per month
-    * 40 bytes per transaction * 1 billion transactions per month
-    * 1.44 TB of new transaction content in 3 years
-    * Assume most are new transactions instead of updates to existing ones
+  * 40 bytes per transaction \* 1 billion transactions per month
+  * 1.44 TB of new transaction content in 3 years
+  * Assume most are new transactions instead of updates to existing ones
 * 400 transactions per second on average
 * 40,000 read requests per second on average
 
@@ -84,7 +82,7 @@ We could store the raw **Sales API** server log files on a managed **Object Stor
 
 We'll assume this is a sample log entry, tab delimited:
 
-```
+```text
 timestamp   product_id  category_id    qty     total_price   seller_id    buyer_id
 t1          product1    category1      2       20.00         1            1
 t2          product1    category2      2       20.00         2            2
@@ -95,7 +93,7 @@ t5          product4    category1      1        5.00         5            6
 ...
 ```
 
-The **Sales Rank Service** could use **MapReduce**, using the **Sales API** server log files as input and writing the results to an aggregate table `sales_rank` in a **SQL Database**.  We should discuss the [use cases and tradeoffs between choosing SQL or NoSQL](https://github.com/donnemartin/system-design-primer#sql-or-nosql).
+The **Sales Rank Service** could use **MapReduce**, using the **Sales API** server log files as input and writing the results to an aggregate table `sales_rank` in a **SQL Database**. We should discuss the [use cases and tradeoffs between choosing SQL or NoSQL](https://github.com/donnemartin/system-design-primer#sql-or-nosql).
 
 We'll use a multi-step **MapReduce**:
 
@@ -176,7 +174,7 @@ class SalesRanker(MRJob):
 
 The result would be the following sorted list, which we could insert into the `sales_rank` table:
 
-```
+```text
 (category1, 1), product4
 (category1, 2), product1
 (category1, 3), product2
@@ -186,7 +184,7 @@ The result would be the following sorted list, which we could insert into the `s
 
 The `sales_rank` table could have the following structure:
 
-```
+```text
 id int NOT NULL AUTO_INCREMENT
 category_id int NOT NULL
 total_sold int NOT NULL
@@ -196,7 +194,7 @@ FOREIGN KEY(category_id) REFERENCES Categories(id)
 FOREIGN KEY(product_id) REFERENCES Products(id)
 ```
 
-We'll create an [index](https://github.com/donnemartin/system-design-primer#use-good-indices) on `id `, `category_id`, and `product_id` to speed up lookups (log-time instead of scanning the entire table) and to keep the data in memory.  Reading 1 MB sequentially from memory takes about 250 microseconds, while reading from SSD takes 4x and from disk takes 80x longer.<sup><a href=https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know>1</a></sup>
+We'll create an [index](https://github.com/donnemartin/system-design-primer#use-good-indices) on `id`, `category_id`, and `product_id` to speed up lookups \(log-time instead of scanning the entire table\) and to keep the data in memory. Reading 1 MB sequentially from memory takes about 250 microseconds, while reading from SSD takes 4x and from disk takes 80x longer.[1](https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know)
 
 ### Use case: User views the past week's most popular products by category
 
@@ -206,13 +204,13 @@ We'll create an [index](https://github.com/donnemartin/system-design-primer#use-
 
 We'll use a public [**REST API**](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest):
 
-```
+```text
 $ curl https://amazon.com/api/v1/popular?category_id=1234
 ```
 
 Response:
 
-```
+```text
 {
     "id": "100",
     "category_id": "1234",
@@ -243,22 +241,22 @@ For internal communications, we could use [Remote Procedure Calls](https://githu
 
 **Important: Do not simply jump right into the final design from the initial design!**
 
-State you would 1) **Benchmark/Load Test**, 2) **Profile** for bottlenecks 3) address bottlenecks while evaluating alternatives and trade-offs, and 4) repeat.  See [Design a system that scales to millions of users on AWS](../scaling_aws/README.md) as a sample on how to iteratively scale the initial design.
+State you would 1\) **Benchmark/Load Test**, 2\) **Profile** for bottlenecks 3\) address bottlenecks while evaluating alternatives and trade-offs, and 4\) repeat. See [Design a system that scales to millions of users on AWS](../scaling_aws/) as a sample on how to iteratively scale the initial design.
 
-It's important to discuss what bottlenecks you might encounter with the initial design and how you might address each of them.  For example, what issues are addressed by adding a **Load Balancer** with multiple **Web Servers**?  **CDN**?  **Master-Slave Replicas**?  What are the alternatives and **Trade-Offs** for each?
+It's important to discuss what bottlenecks you might encounter with the initial design and how you might address each of them. For example, what issues are addressed by adding a **Load Balancer** with multiple **Web Servers**? **CDN**? **Master-Slave Replicas**? What are the alternatives and **Trade-Offs** for each?
 
-We'll introduce some components to complete the design and to address scalability issues.  Internal load balancers are not shown to reduce clutter.
+We'll introduce some components to complete the design and to address scalability issues. Internal load balancers are not shown to reduce clutter.
 
-*To avoid repeating discussions*, refer to the following [system design topics](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) for main talking points, tradeoffs, and alternatives:
+_To avoid repeating discussions_, refer to the following [system design topics](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) for main talking points, tradeoffs, and alternatives:
 
 * [DNS](https://github.com/donnemartin/system-design-primer#domain-name-system)
 * [CDN](https://github.com/donnemartin/system-design-primer#content-delivery-network)
 * [Load balancer](https://github.com/donnemartin/system-design-primer#load-balancer)
 * [Horizontal scaling](https://github.com/donnemartin/system-design-primer#horizontal-scaling)
-* [Web server (reverse proxy)](https://github.com/donnemartin/system-design-primer#reverse-proxy-web-server)
-* [API server (application layer)](https://github.com/donnemartin/system-design-primer#application-layer)
+* [Web server \(reverse proxy\)](https://github.com/donnemartin/system-design-primer#reverse-proxy-web-server)
+* [API server \(application layer\)](https://github.com/donnemartin/system-design-primer#application-layer)
 * [Cache](https://github.com/donnemartin/system-design-primer#cache)
-* [Relational database management system (RDBMS)](https://github.com/donnemartin/system-design-primer#relational-database-management-system-rdbms)
+* [Relational database management system \(RDBMS\)](https://github.com/donnemartin/system-design-primer#relational-database-management-system-rdbms)
 * [SQL write master-slave failover](https://github.com/donnemartin/system-design-primer#fail-over)
 * [Master-slave replication](https://github.com/donnemartin/system-design-primer#master-slave-replication)
 * [Consistency patterns](https://github.com/donnemartin/system-design-primer#consistency-patterns)
@@ -266,11 +264,11 @@ We'll introduce some components to complete the design and to address scalabilit
 
 The **Analytics Database** could use a data warehousing solution such as Amazon Redshift or Google BigQuery.
 
-We might only want to store a limited time period of data in the database, while storing the rest in a data warehouse or in an **Object Store**.  An **Object Store** such as Amazon S3 can comfortably handle the constraint of 40 GB of new content per month.
+We might only want to store a limited time period of data in the database, while storing the rest in a data warehouse or in an **Object Store**. An **Object Store** such as Amazon S3 can comfortably handle the constraint of 40 GB of new content per month.
 
-To address the 40,000 *average* read requests per second (higher at peak), traffic for popular content (and their sales rank) should be handled by the **Memory Cache** instead of the database.  The **Memory Cache** is also useful for handling the unevenly distributed traffic and traffic spikes.  With the large volume of reads, the **SQL Read Replicas** might not be able to handle the cache misses.  We'll probably need to employ additional SQL scaling patterns.
+To address the 40,000 _average_ read requests per second \(higher at peak\), traffic for popular content \(and their sales rank\) should be handled by the **Memory Cache** instead of the database. The **Memory Cache** is also useful for handling the unevenly distributed traffic and traffic spikes. With the large volume of reads, the **SQL Read Replicas** might not be able to handle the cache misses. We'll probably need to employ additional SQL scaling patterns.
 
-400 *average* writes per second (higher at peak) might be tough for a single **SQL Write Master-Slave**, also pointing to a need for additional scaling techniques.
+400 _average_ writes per second \(higher at peak\) might be tough for a single **SQL Write Master-Slave**, also pointing to a need for additional scaling techniques.
 
 SQL scaling patterns include:
 
@@ -296,19 +294,19 @@ We should also consider moving some data to a **NoSQL Database**.
 ### Caching
 
 * Where to cache
-    * [Client caching](https://github.com/donnemartin/system-design-primer#client-caching)
-    * [CDN caching](https://github.com/donnemartin/system-design-primer#cdn-caching)
-    * [Web server caching](https://github.com/donnemartin/system-design-primer#web-server-caching)
-    * [Database caching](https://github.com/donnemartin/system-design-primer#database-caching)
-    * [Application caching](https://github.com/donnemartin/system-design-primer#application-caching)
+  * [Client caching](https://github.com/donnemartin/system-design-primer#client-caching)
+  * [CDN caching](https://github.com/donnemartin/system-design-primer#cdn-caching)
+  * [Web server caching](https://github.com/donnemartin/system-design-primer#web-server-caching)
+  * [Database caching](https://github.com/donnemartin/system-design-primer#database-caching)
+  * [Application caching](https://github.com/donnemartin/system-design-primer#application-caching)
 * What to cache
-    * [Caching at the database query level](https://github.com/donnemartin/system-design-primer#caching-at-the-database-query-level)
-    * [Caching at the object level](https://github.com/donnemartin/system-design-primer#caching-at-the-object-level)
+  * [Caching at the database query level](https://github.com/donnemartin/system-design-primer#caching-at-the-database-query-level)
+  * [Caching at the object level](https://github.com/donnemartin/system-design-primer#caching-at-the-object-level)
 * When to update the cache
-    * [Cache-aside](https://github.com/donnemartin/system-design-primer#cache-aside)
-    * [Write-through](https://github.com/donnemartin/system-design-primer#write-through)
-    * [Write-behind (write-back)](https://github.com/donnemartin/system-design-primer#write-behind-write-back)
-    * [Refresh ahead](https://github.com/donnemartin/system-design-primer#refresh-ahead)
+  * [Cache-aside](https://github.com/donnemartin/system-design-primer#cache-aside)
+  * [Write-through](https://github.com/donnemartin/system-design-primer#write-through)
+  * [Write-behind \(write-back\)](https://github.com/donnemartin/system-design-primer#write-behind-write-back)
+  * [Refresh ahead](https://github.com/donnemartin/system-design-primer#refresh-ahead)
 
 ### Asynchronism and microservices
 
@@ -320,8 +318,8 @@ We should also consider moving some data to a **NoSQL Database**.
 ### Communications
 
 * Discuss tradeoffs:
-    * External communication with clients - [HTTP APIs following REST](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)
-    * Internal communications - [RPC](https://github.com/donnemartin/system-design-primer#remote-procedure-call-rpc)
+  * External communication with clients - [HTTP APIs following REST](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)
+  * Internal communications - [RPC](https://github.com/donnemartin/system-design-primer#remote-procedure-call-rpc)
 * [Service discovery](https://github.com/donnemartin/system-design-primer#service-discovery)
 
 ### Security
@@ -336,3 +334,4 @@ See [Latency numbers every programmer should know](https://github.com/donnemarti
 
 * Continue benchmarking and monitoring your system to address bottlenecks as they come up
 * Scaling is an iterative process
+

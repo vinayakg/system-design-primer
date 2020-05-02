@@ -1,12 +1,10 @@
 # Design the data structures for a social network
 
-*Note: This document links directly to relevant areas found in the [system design topics](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) to avoid duplication.  Refer to the linked content for general talking points, tradeoffs, and alternatives.*
+_Note: This document links directly to relevant areas found in the_ [_system design topics_](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) _to avoid duplication. Refer to the linked content for general talking points, tradeoffs, and alternatives._
 
 ## Step 1: Outline use cases and constraints
 
-> Gather requirements and scope the problem.
-> Ask questions to clarify use cases and constraints.
-> Discuss assumptions.
+> Gather requirements and scope the problem. Ask questions to clarify use cases and constraints. Discuss assumptions.
 
 Without an interviewer to address clarifying questions, we'll define some use cases and constraints.
 
@@ -22,7 +20,7 @@ Without an interviewer to address clarifying questions, we'll define some use ca
 #### State assumptions
 
 * Traffic is not evenly distributed
-    * Some searches are more popular than others, while others are only executed once
+  * Some searches are more popular than others, while others are only executed once
 * Graph data won't fit on a single machine
 * Graph edges are unweighted
 * 100 million users
@@ -36,7 +34,7 @@ Exercise the use of more traditional systems - don't use graph-specific solution
 **Clarify with your interviewer if you should run back-of-the-envelope usage calculations.**
 
 * 5 billion friend relationships
-    * 100 million users * 50 friends per user average
+  * 100 million users \* 50 friends per user average
 * 400 search requests per second
 
 Handy conversion guide:
@@ -60,7 +58,7 @@ Handy conversion guide:
 
 **Clarify with your interviewer how much code you are expected to write**.
 
-Without the constraint of millions of users (vertices) and billions of friend relationships (edges), we could solve this unweighted shortest path task with a general BFS approach:
+Without the constraint of millions of users \(vertices\) and billions of friend relationships \(edges\), we could solve this unweighted shortest path task with a general BFS approach:
 
 ```python
 class Graph(Graph):
@@ -105,15 +103,15 @@ We won't be able to fit all users on the same machine, we'll need to [shard](htt
 * The **Web Server** forwards the request to the **Search API** server
 * The **Search API** server forwards the request to the **User Graph Service**
 * The **User Graph Service** does the following:
-    * Uses the **Lookup Service** to find the **Person Server** where the current user's info is stored
-    * Finds the appropriate **Person Server** to retrieve the current user's list of `friend_ids`
-    * Runs a BFS search using the current user as the `source` and the current user's `friend_ids` as the ids for each `adjacent_node`
-    * To get the `adjacent_node` from a given id:
-        * The **User Graph Service** will *again* need to communicate with the **Lookup Service** to determine which **Person Server** stores the`adjacent_node` matching the given id (potential for optimization)
+  * Uses the **Lookup Service** to find the **Person Server** where the current user's info is stored
+  * Finds the appropriate **Person Server** to retrieve the current user's list of `friend_ids`
+  * Runs a BFS search using the current user as the `source` and the current user's `friend_ids` as the ids for each `adjacent_node`
+  * To get the `adjacent_node` from a given id:
+    * The **User Graph Service** will _again_ need to communicate with the **Lookup Service** to determine which **Person Server** stores the`adjacent_node` matching the given id \(potential for optimization\)
 
 **Clarify with your interviewer how much code you should be writing**.
 
-**Note**: Error handling is excluded below for simplicity.  Ask if you should code proper error handing.
+**Note**: Error handling is excluded below for simplicity. Ask if you should code proper error handing.
 
 **Lookup Service** implementation:
 
@@ -220,13 +218,13 @@ class UserGraphService(object):
 
 We'll use a public [**REST API**](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest):
 
-```
+```text
 $ curl https://social.com/api/v1/friend_search?person_id=1234
 ```
 
 Response:
 
-```
+```text
 {
     "person_id": "100",
     "name": "foo",
@@ -254,35 +252,35 @@ For internal communications, we could use [Remote Procedure Calls](https://githu
 
 **Important: Do not simply jump right into the final design from the initial design!**
 
-State you would 1) **Benchmark/Load Test**, 2) **Profile** for bottlenecks 3) address bottlenecks while evaluating alternatives and trade-offs, and 4) repeat.  See [Design a system that scales to millions of users on AWS](../scaling_aws/README.md) as a sample on how to iteratively scale the initial design.
+State you would 1\) **Benchmark/Load Test**, 2\) **Profile** for bottlenecks 3\) address bottlenecks while evaluating alternatives and trade-offs, and 4\) repeat. See [Design a system that scales to millions of users on AWS](../scaling_aws/) as a sample on how to iteratively scale the initial design.
 
-It's important to discuss what bottlenecks you might encounter with the initial design and how you might address each of them.  For example, what issues are addressed by adding a **Load Balancer** with multiple **Web Servers**?  **CDN**?  **Master-Slave Replicas**?  What are the alternatives and **Trade-Offs** for each?
+It's important to discuss what bottlenecks you might encounter with the initial design and how you might address each of them. For example, what issues are addressed by adding a **Load Balancer** with multiple **Web Servers**? **CDN**? **Master-Slave Replicas**? What are the alternatives and **Trade-Offs** for each?
 
-We'll introduce some components to complete the design and to address scalability issues.  Internal load balancers are not shown to reduce clutter.
+We'll introduce some components to complete the design and to address scalability issues. Internal load balancers are not shown to reduce clutter.
 
-*To avoid repeating discussions*, refer to the following [system design topics](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) for main talking points, tradeoffs, and alternatives:
+_To avoid repeating discussions_, refer to the following [system design topics](https://github.com/donnemartin/system-design-primer#index-of-system-design-topics) for main talking points, tradeoffs, and alternatives:
 
 * [DNS](https://github.com/donnemartin/system-design-primer#domain-name-system)
 * [Load balancer](https://github.com/donnemartin/system-design-primer#load-balancer)
 * [Horizontal scaling](https://github.com/donnemartin/system-design-primer#horizontal-scaling)
-* [Web server (reverse proxy)](https://github.com/donnemartin/system-design-primer#reverse-proxy-web-server)
-* [API server (application layer)](https://github.com/donnemartin/system-design-primer#application-layer)
+* [Web server \(reverse proxy\)](https://github.com/donnemartin/system-design-primer#reverse-proxy-web-server)
+* [API server \(application layer\)](https://github.com/donnemartin/system-design-primer#application-layer)
 * [Cache](https://github.com/donnemartin/system-design-primer#cache)
 * [Consistency patterns](https://github.com/donnemartin/system-design-primer#consistency-patterns)
 * [Availability patterns](https://github.com/donnemartin/system-design-primer#availability-patterns)
 
-To address the constraint of 400 *average* read requests per second (higher at peak), person data can be served from a **Memory Cache** such as Redis or Memcached to reduce response times and to reduce traffic to downstream services.  This could be especially useful for people who do multiple searches in succession and for people who are well-connected.  Reading 1 MB sequentially from memory takes about 250 microseconds, while reading from SSD takes 4x and from disk takes 80x longer.<sup><a href=https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know>1</a></sup>
+To address the constraint of 400 _average_ read requests per second \(higher at peak\), person data can be served from a **Memory Cache** such as Redis or Memcached to reduce response times and to reduce traffic to downstream services. This could be especially useful for people who do multiple searches in succession and for people who are well-connected. Reading 1 MB sequentially from memory takes about 250 microseconds, while reading from SSD takes 4x and from disk takes 80x longer.[1](https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know)
 
 Below are further optimizations:
 
 * Store complete or partial BFS traversals to speed up subsequent lookups in the **Memory Cache**
 * Batch compute offline then store complete or partial BFS traversals to speed up subsequent lookups in a **NoSQL Database**
 * Reduce machine jumps by batching together friend lookups hosted on the same **Person Server**
-    * [Shard](https://github.com/donnemartin/system-design-primer#sharding) **Person Servers** by location to further improve this, as friends generally live closer to each other
+  * [Shard](https://github.com/donnemartin/system-design-primer#sharding) **Person Servers** by location to further improve this, as friends generally live closer to each other
 * Do two BFS searches at the same time, one starting from the source, and one from the destination, then merge the two paths
 * Start the BFS search from people with large numbers of friends, as they are more likely to reduce the number of [degrees of separation](https://en.wikipedia.org/wiki/Six_degrees_of_separation) between the current user and the search target
 * Set a limit based on time or number of hops before asking the user if they want to continue searching, as searching could take a considerable amount of time in some cases
-* Use a **Graph Database** such as [Neo4j](https://neo4j.com/) or a graph-specific query language such as [GraphQL](http://graphql.org/) (if there were no constraint preventing the use of **Graph Databases**)
+* Use a **Graph Database** such as [Neo4j](https://neo4j.com/) or a graph-specific query language such as [GraphQL](http://graphql.org/) \(if there were no constraint preventing the use of **Graph Databases**\)
 
 ## Additional talking points
 
@@ -307,19 +305,19 @@ Below are further optimizations:
 ### Caching
 
 * Where to cache
-    * [Client caching](https://github.com/donnemartin/system-design-primer#client-caching)
-    * [CDN caching](https://github.com/donnemartin/system-design-primer#cdn-caching)
-    * [Web server caching](https://github.com/donnemartin/system-design-primer#web-server-caching)
-    * [Database caching](https://github.com/donnemartin/system-design-primer#database-caching)
-    * [Application caching](https://github.com/donnemartin/system-design-primer#application-caching)
+  * [Client caching](https://github.com/donnemartin/system-design-primer#client-caching)
+  * [CDN caching](https://github.com/donnemartin/system-design-primer#cdn-caching)
+  * [Web server caching](https://github.com/donnemartin/system-design-primer#web-server-caching)
+  * [Database caching](https://github.com/donnemartin/system-design-primer#database-caching)
+  * [Application caching](https://github.com/donnemartin/system-design-primer#application-caching)
 * What to cache
-    * [Caching at the database query level](https://github.com/donnemartin/system-design-primer#caching-at-the-database-query-level)
-    * [Caching at the object level](https://github.com/donnemartin/system-design-primer#caching-at-the-object-level)
+  * [Caching at the database query level](https://github.com/donnemartin/system-design-primer#caching-at-the-database-query-level)
+  * [Caching at the object level](https://github.com/donnemartin/system-design-primer#caching-at-the-object-level)
 * When to update the cache
-    * [Cache-aside](https://github.com/donnemartin/system-design-primer#cache-aside)
-    * [Write-through](https://github.com/donnemartin/system-design-primer#write-through)
-    * [Write-behind (write-back)](https://github.com/donnemartin/system-design-primer#write-behind-write-back)
-    * [Refresh ahead](https://github.com/donnemartin/system-design-primer#refresh-ahead)
+  * [Cache-aside](https://github.com/donnemartin/system-design-primer#cache-aside)
+  * [Write-through](https://github.com/donnemartin/system-design-primer#write-through)
+  * [Write-behind \(write-back\)](https://github.com/donnemartin/system-design-primer#write-behind-write-back)
+  * [Refresh ahead](https://github.com/donnemartin/system-design-primer#refresh-ahead)
 
 ### Asynchronism and microservices
 
@@ -331,8 +329,8 @@ Below are further optimizations:
 ### Communications
 
 * Discuss tradeoffs:
-    * External communication with clients - [HTTP APIs following REST](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)
-    * Internal communications - [RPC](https://github.com/donnemartin/system-design-primer#remote-procedure-call-rpc)
+  * External communication with clients - [HTTP APIs following REST](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest)
+  * Internal communications - [RPC](https://github.com/donnemartin/system-design-primer#remote-procedure-call-rpc)
 * [Service discovery](https://github.com/donnemartin/system-design-primer#service-discovery)
 
 ### Security
@@ -347,3 +345,4 @@ See [Latency numbers every programmer should know](https://github.com/donnemarti
 
 * Continue benchmarking and monitoring your system to address bottlenecks as they come up
 * Scaling is an iterative process
+

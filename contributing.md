@@ -1,5 +1,4 @@
-Contributing
-============
+# Contributing
 
 Contributions are welcome!
 
@@ -11,28 +10,34 @@ For bug reports or requests [submit an issue](https://github.com/donnemartin/sys
 
 ## Pull Requests
 
-The preferred way to contribute is to fork the
-[main repository](https://github.com/donnemartin/system-design-primer) on GitHub.
+The preferred way to contribute is to fork the [main repository](https://github.com/donnemartin/system-design-primer) on GitHub.
 
-1. Fork the [main repository](https://github.com/donnemartin/system-design-primer).  Click on the 'Fork' button near the top of the page.  This creates a copy of the code under your account on the GitHub server.
-
+1. Fork the [main repository](https://github.com/donnemartin/system-design-primer). Click on the 'Fork' button near the top of the page. This creates a copy of the code under your account on the GitHub server.
 2. Clone this copy to your local disk:
 
-        $ git clone git@github.com:YourLogin/system-design-primer.git
-        $ cd system-design-primer
+   ```text
+    $ git clone git@github.com:YourLogin/system-design-primer.git
+    $ cd system-design-primer
+   ```
 
 3. Create a branch to hold your changes and start making changes. Don't work in the `master` branch!
 
-        $ git checkout -b my-feature
+   ```text
+    $ git checkout -b my-feature
+   ```
 
 4. Work on this copy on your computer using Git to do the version control. When you're done editing, run the following to record your changes in Git:
 
-        $ git add modified_files
-        $ git commit
+   ```text
+    $ git add modified_files
+    $ git commit
+   ```
 
 5. Push your changes to GitHub with:
 
-        $ git push -u origin my-feature
+   ```text
+    $ git push -u origin my-feature
+   ```
 
 6. Finally, go to the web page of your fork of the `system-design-primer` repo and click 'Pull Request' to send your changes for review.
 
@@ -61,12 +66,13 @@ Translations to new languages are always welcome, especially if you can maintain
 
 * Check existing issues to see if a translation is in progress or stalled. If so, offer to help.
 * If it is not in progress, file an issue for your language so people know you are working on it and we can arrange. Confirm you are native level in the language and are willing to maintain the translation, so it's not orphaned.
-* To get it started, fork the repo, then submit a PR with the single file README-xx.md added, where xx is the language code. Use standard [IETF language tags](https://www.w3.org/International/articles/language-tags/), i.e. the same as is used by Wikipedia, *not* the code for a single country. These are usually just the two-letter lowercase code, for example, `fr` for French and `uk` for Ukrainian (not `ua`, which is for the country). For languages that have variations, use the shortest tag, such as `zh-Hant`.
+* To get it started, fork the repo, then submit a PR with the single file README-xx.md added, where xx is the language code. Use standard [IETF language tags](https://www.w3.org/International/articles/language-tags/), i.e. the same as is used by Wikipedia, _not_ the code for a single country. These are usually just the two-letter lowercase code, for example, `fr` for French and `uk` for Ukrainian \(not `ua`, which is for the country\). For languages that have variations, use the shortest tag, such as `zh-Hant`.
 * Invite friends to review if possible. If desired, feel free to invite friends to help your original translation by letting them fork your repo, then merging their PRs.
-* Add links to your translation at the top of every README*.md file. (For consistency, the link should be added in alphabetical order by ISO code, and the anchor text should be in the native language.)
+* Add links to your translation at the top of every README\*.md file. \(For consistency, the link should be added in alphabetical order by ISO code, and the anchor text should be in the native language.\)
 * When done, indicate on the PR that it's ready to be merged into the main repo.
 * Once accepted, your PR will be squashed into a single commit into the `master` branch.
 
 ### Translation template credits
 
 Thanks to [The Art of Command Line](https://github.com/jlevy/the-art-of-command-line) for the translation template.
+

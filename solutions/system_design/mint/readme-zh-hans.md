@@ -1,12 +1,10 @@
 # 设计 Mint.com
 
-**注意：这个文档中的链接会直接指向[系统设计主题索引](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题索引)中的有关部分，以避免重复的内容。您可以参考链接的相关内容，来了解其总的要点、方案的权衡取舍以及可选的替代方案。**
+**注意：这个文档中的链接会直接指向**[**系统设计主题索引**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题索引)**中的有关部分，以避免重复的内容。您可以参考链接的相关内容，来了解其总的要点、方案的权衡取舍以及可选的替代方案。**
 
 ## 第一步：简述用例与约束条件
 
-> 搜集需求与问题的范围。
-> 提出问题来明确用例与约束条件。
-> 讨论假设。
+> 搜集需求与问题的范围。 提出问题来明确用例与约束条件。 讨论假设。
 
 我们将在没有面试官明确说明问题的情况下，自己定义一些用例以及限制条件。
 
@@ -16,14 +14,14 @@
 
 * **用户** 连接到一个财务账户
 * **服务** 从账户中提取交易
-    * 每日更新
-    * 分类交易
-        * 允许用户手动分类
-        * 不自动重新分类
-    * 按类别分析每月支出
+  * 每日更新
+  * 分类交易
+    * 允许用户手动分类
+    * 不自动重新分类
+  * 按类别分析每月支出
 * **服务** 推荐预算
-    * 允许用户手动设置预算
-    * 当接近或者超出预算时，发送通知
+  * 允许用户手动设置预算
+  * 当接近或者超出预算时，发送通知
 * **服务** 具有高可用性
 
 #### 非用例范围
@@ -39,33 +37,33 @@
 * 添加或者移除财务账户相对较少
 * 预算通知不需要及时
 * 1000 万用户
-    * 每个用户10个预算类别= 1亿个预算项
-    * 示例类别:
-        * Housing = $1,000
-        * Food = $200
-        * Gas = $100
-    * 卖方确定交易类别
-        * 50000 个卖方
+  * 每个用户10个预算类别= 1亿个预算项
+  * 示例类别:
+    * Housing = $1,000
+    * Food = $200
+    * Gas = $100
+  * 卖方确定交易类别
+    * 50000 个卖方
 * 3000 万财务账户
 * 每月 50 亿交易
 * 每月 5 亿读请求
 * 10:1 读写比
-    * Write-heavy，用户每天都进行交易，但是每天很少访问该网站
+  * Write-heavy，用户每天都进行交易，但是每天很少访问该网站
 
 #### 计算用量
 
 **如果你需要进行粗略的用量计算，请向你的面试官说明。**
 
 * 每次交易的用量:
-    * `user_id` - 8 字节
-    * `created_at` - 5 字节
-    * `seller` - 32 字节
-    * `amount` - 5 字节
-    * Total: ~50 字节
+  * `user_id` - 8 字节
+  * `created_at` - 5 字节
+  * `seller` - 32 字节
+  * `amount` - 5 字节
+  * Total: ~50 字节
 * 每月产生 250 GB 新的交易内容
-    * 每次交易 50 比特 * 50 亿交易每月
-    * 3年内新的交易内容 9 TB
-    * Assume most are new transactions instead of updates to existing ones
+  * 每次交易 50 比特 \* 50 亿交易每月
+  * 3年内新的交易内容 9 TB
+  * Assume most are new transactions instead of updates to existing ones
 * 平均每秒产生 2000 次交易
 * 平均每秒产生 200 读请求
 
@@ -98,7 +96,7 @@
 
 `accounts`表应该具有如下结构：
 
-```
+```text
 id int NOT NULL AUTO_INCREMENT
 created_at datetime NOT NULL
 last_update datetime NOT NULL
@@ -110,11 +108,11 @@ PRIMARY KEY(id)
 FOREIGN KEY(user_id) REFERENCES users(id)
 ```
 
-我们将在`id`，`user_id`和`created_at`等字段上创建一个[索引](https://github.com/donnemartin/system-design-primer#use-good-indices)以加速查找（对数时间而不是扫描整个表）并保持数据在内存中。从内存中顺序读取 1 MB数据花费大约250毫秒，而从SSD读取是其4倍，从磁盘读取是其80倍。<sup><a href=https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know>1</a></sup>
+我们将在`id`，`user_id`和`created_at`等字段上创建一个[索引](https://github.com/donnemartin/system-design-primer#use-good-indices)以加速查找（对数时间而不是扫描整个表）并保持数据在内存中。从内存中顺序读取 1 MB数据花费大约250毫秒，而从SSD读取是其4倍，从磁盘读取是其80倍。[1](https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know)
 
 我们将使用公开的[**REST API**](https://github.com/donnemartin/system-design-primer#representational-state-transfer-rest):
 
-```
+```text
 $ curl -X POST --data '{ "user_id": "foo", "account_url": "bar", \
     "account_login": "baz", "account_password": "qux" }' \
     https://mint.com/api/v1/account
@@ -137,20 +135,20 @@ $ curl -X POST --data '{ "user_id": "foo", "account_url": "bar", \
 * **客户端**向 **Web服务器** 发送请求
 * **Web服务器** 将请求转发到 **帐户API** 服务器
 * **帐户API** 服务器将job放在 **队列** 中，如 [Amazon SQS](https://aws.amazon.com/sqs/) 或者 [RabbitMQ](https://www.rabbitmq.com/)
-    * 提取交易可能需要一段时间，我们可能希望[与队列异步](https://github.com/donnemartin/system-design-primer#asynchronism)地来做，虽然这会引入额外的复杂度。
+  * 提取交易可能需要一段时间，我们可能希望[与队列异步](https://github.com/donnemartin/system-design-primer#asynchronism)地来做，虽然这会引入额外的复杂度。
 * **交易提取服务** 执行如下操作：
-    * 从 **Queue** 中拉取并从金融机构中提取给定用户的交易，将结果作为原始日志文件存储在 **对象存储区**。
-    * 使用 **分类服务** 来分类每个交易
-    * 使用 **预算服务** 来按类别计算每月总支出
-        * **预算服务** 使用 **通知服务** 让用户知道他们是否接近或者已经超出预算
-    * 更新具有分类交易的 **SQL数据库** 的`transactions`表
-    * 按类别更新 **SQL数据库** `monthly_spending`表的每月总支出
-    * 通过 **通知服务** 提醒用户交易完成
-        * 使用一个 **队列** (没有画出来) 来异步发送通知
+  * 从 **Queue** 中拉取并从金融机构中提取给定用户的交易，将结果作为原始日志文件存储在 **对象存储区**。
+  * 使用 **分类服务** 来分类每个交易
+  * 使用 **预算服务** 来按类别计算每月总支出
+    * **预算服务** 使用 **通知服务** 让用户知道他们是否接近或者已经超出预算
+  * 更新具有分类交易的 **SQL数据库** 的`transactions`表
+  * 按类别更新 **SQL数据库** `monthly_spending`表的每月总支出
+  * 通过 **通知服务** 提醒用户交易完成
+    * 使用一个 **队列** \(没有画出来\) 来异步发送通知
 
 `transactions`表应该具有如下结构：
 
-```
+```text
 id int NOT NULL AUTO_INCREMENT
 created_at datetime NOT NULL
 seller varchar(32) NOT NULL
@@ -164,7 +162,7 @@ FOREIGN KEY(user_id) REFERENCES users(id)
 
 `monthly_spending`表应该具有如下结构：
 
-```
+```text
 id int NOT NULL AUTO_INCREMENT
 month_year date NOT NULL
 category varchar(32)
@@ -197,7 +195,7 @@ seller_category_map['Target'] = DefaultCategories.SHOPPING
 ...
 ```
 
-对于一开始没有在映射中的卖家，我们可以通过评估用户提供的手动类别来进行众包。在 O(1) 时间内，我们可以用堆来快速查找每个卖家的顶端的手动覆盖。
+对于一开始没有在映射中的卖家，我们可以通过评估用户提供的手动类别来进行众包。在 O\(1\) 时间内，我们可以用堆来快速查找每个卖家的顶端的手动覆盖。
 
 ```python
 class Categorizer(object):
@@ -230,8 +228,7 @@ class Transaction(object):
 
 ### 用例：服务推荐预算
 
-首先，我们可以使用根据收入等级分配每类别金额的通用预算模板。使用这种方法，我们不必存储在约束中标识的 1 亿个预算项目，只需存储用户覆盖的预算项目。如果用户覆盖预算类别，我们可以在
-`TABLE budget_overrides`中存储此覆盖。
+首先，我们可以使用根据收入等级分配每类别金额的通用预算模板。使用这种方法，我们不必存储在约束中标识的 1 亿个预算项目，只需存储用户覆盖的预算项目。如果用户覆盖预算类别，我们可以在 `TABLE budget_overrides`中存储此覆盖。
 
 ```python
 class Budget(object):
@@ -268,7 +265,7 @@ class Budget(object):
 
 日志文件格式样例，以tab分割：
 
-```
+```text
 user_id   timestamp   seller  amount
 ```
 
@@ -331,7 +328,7 @@ class SpendingByCategory(MRJob):
 
 **重要提示：不要从最初设计直接跳到最终设计中！**
 
-现在你要 1) **基准测试、负载测试**。2) **分析、描述**性能瓶颈。3) 在解决瓶颈问题的同时，评估替代方案、权衡利弊。4) 重复以上步骤。请阅读[「设计一个系统，并将其扩大到为数以百万计的 AWS 用户服务」](../scaling_aws/README.md) 来了解如何逐步扩大初始设计。
+现在你要 1\) **基准测试、负载测试**。2\) **分析、描述**性能瓶颈。3\) 在解决瓶颈问题的同时，评估替代方案、权衡利弊。4\) 重复以上步骤。请阅读[「设计一个系统，并将其扩大到为数以百万计的 AWS 用户服务」](../scaling_aws/) 来了解如何逐步扩大初始设计。
 
 讨论初始设计可能遇到的瓶颈及相关解决方案是很重要的。例如加上一个配置多台 **Web 服务器**的**负载均衡器**是否能够解决问题？**CDN**呢？**主从复制**呢？它们各自的替代方案和需要**权衡**的利弊又有什么呢？
 
@@ -345,7 +342,7 @@ class SpendingByCategory(MRJob):
 * [反向代理（web 服务器）](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#反向代理web-服务器)
 * [API 服务（应用层）](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用层)
 * [缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存)
-* [关系型数据库管理系统 (RDBMS)](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#关系型数据库管理系统rdbms)
+* [关系型数据库管理系统 \(RDBMS\)](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#关系型数据库管理系统rdbms)
 * [SQL 故障主从切换](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#故障切换)
 * [主从复制](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#主从复制)
 * [异步](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#异步)
@@ -358,23 +355,23 @@ class SpendingByCategory(MRJob):
 
 * **客户端** 发送读请求给 **Web 服务器**
 * **Web 服务器** 转发请求到 **读 API** 服务器
-    * 静态内容可通过 **对象存储** 比如缓存在 **CDN** 上的 S3 来服务
+  * 静态内容可通过 **对象存储** 比如缓存在 **CDN** 上的 S3 来服务
 * **读 API** 服务器做如下动作:
-    * 检查 **内存缓存** 的内容
-        * 如果URL在 **内存缓存**中，返回缓存的内容
-        * 否则
-            * 如果URL在 **SQL 数据库**中，获取该内容
-                * 以其内容更新 **内存缓存**
+  * 检查 **内存缓存** 的内容
+    * 如果URL在 **内存缓存**中，返回缓存的内容
+    * 否则
+      * 如果URL在 **SQL 数据库**中，获取该内容
+        * 以其内容更新 **内存缓存**
 
 参考 [何时更新缓存](https://github.com/donnemartin/system-design-primer#when-to-update-the-cache) 中权衡和替代的内容。以上方法描述了 [cache-aside缓存模式](https://github.com/donnemartin/system-design-primer#cache-aside).
 
 我们可以使用诸如 Amazon Redshift 或者 Google BigQuery 等数据仓库解决方案，而不是将`monthly_spending`聚合表保留在 **SQL 数据库** 中。
 
-我们可能只想在数据库中存储一个月的`交易`数据，而将其余数据存储在数据仓库或者 **对象存储区** 中。**对象存储区** （如Amazon S3) 能够舒服地解决每月 250 GB新内容的限制。
+我们可能只想在数据库中存储一个月的`交易`数据，而将其余数据存储在数据仓库或者 **对象存储区** 中。**对象存储区** （如Amazon S3\) 能够舒服地解决每月 250 GB新内容的限制。
 
-为了解决每秒 *平均* 2000 次读请求数（峰值时更高），受欢迎的内容的流量应由 **内存缓存** 而不是数据库来处理。 **内存缓存** 也可用于处理不均匀分布的流量和流量尖峰。 只要副本不陷入重复写入的困境，**SQL 读副本** 应该能够处理高速缓存未命中。
+为了解决每秒 _平均_ 2000 次读请求数（峰值时更高），受欢迎的内容的流量应由 **内存缓存** 而不是数据库来处理。 **内存缓存** 也可用于处理不均匀分布的流量和流量尖峰。 只要副本不陷入重复写入的困境，**SQL 读副本** 应该能够处理高速缓存未命中。
 
-*平均* 200 次交易写入每秒（峰值时更高）对于单个 **SQL 写入主-从服务** 来说可能是棘手的。我们可能需要考虑其它的 SQL 性能拓展技术：
+_平均_ 200 次交易写入每秒（峰值时更高）对于单个 **SQL 写入主-从服务** 来说可能是棘手的。我们可能需要考虑其它的 SQL 性能拓展技术：
 
 * [联合](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#联合)
 * [分片](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#分片)
@@ -398,19 +395,19 @@ class SpendingByCategory(MRJob):
 ### 缓存
 
 * 在哪缓存
-    * [客户端缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#客户端缓存)
-    * [CDN 缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#cdn-缓存)
-    * [Web 服务器缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#web-服务器缓存)
-    * [数据库缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库缓存)
-    * [应用缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用缓存)
+  * [客户端缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#客户端缓存)
+  * [CDN 缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#cdn-缓存)
+  * [Web 服务器缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#web-服务器缓存)
+  * [数据库缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库缓存)
+  * [应用缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用缓存)
 * 什么需要缓存
-    * [数据库查询级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库查询级别的缓存)
-    * [对象级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#对象级别的缓存)
+  * [数据库查询级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库查询级别的缓存)
+  * [对象级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#对象级别的缓存)
 * 何时更新缓存
-    * [缓存模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存模式)
-    * [直写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#直写模式)
-    * [回写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#回写模式)
-    * [刷新](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#刷新)
+  * [缓存模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存模式)
+  * [直写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#直写模式)
+  * [回写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#回写模式)
+  * [刷新](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#刷新)
 
 ### 异步与微服务
 
@@ -422,8 +419,8 @@ class SpendingByCategory(MRJob):
 ### 通信
 
 * 可权衡选择的方案：
-    * 与客户端的外部通信 - [使用 REST 作为 HTTP API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)
-    * 服务器内部通信 - [RPC](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
+  * 与客户端的外部通信 - [使用 REST 作为 HTTP API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)
+  * 服务器内部通信 - [RPC](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
 * [服务发现](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#服务发现)
 
 ### 安全性
@@ -438,3 +435,4 @@ class SpendingByCategory(MRJob):
 
 * 持续进行基准测试并监控你的系统，以解决他们提出的瓶颈问题。
 * 架构拓展是一个迭代的过程。
+

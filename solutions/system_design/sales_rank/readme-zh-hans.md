@@ -1,12 +1,10 @@
 # 为 Amazon 设计分类售卖排行
 
-**注意：这个文档中的链接会直接指向[系统设计主题索引](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题的索引)中的有关部分，以避免重复的内容。你可以参考链接的相关内容，来了解其总的要点、方案的权衡取舍以及可选的替代方案。**
+**注意：这个文档中的链接会直接指向**[**系统设计主题索引**](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#系统设计主题的索引)**中的有关部分，以避免重复的内容。你可以参考链接的相关内容，来了解其总的要点、方案的权衡取舍以及可选的替代方案。**
 
 ## 第一步：简述用例与约束条件
 
-> 搜集需求与问题的范围。
-> 提出问题来明确用例与约束条件。
-> 讨论假设。
+> 搜集需求与问题的范围。 提出问题来明确用例与约束条件。 讨论假设。
 
 我们将在没有面试官明确说明问题的情况下，自己定义一些用例以及限制条件。
 
@@ -21,7 +19,7 @@
 #### 不在用例范围内的有
 
 * 一般的电商网站
-    * 只为售卖排行榜设计组件
+  * 只为售卖排行榜设计组件
 
 ### 限制条件与假设
 
@@ -32,7 +30,7 @@
 * 商品不能够更改分类
 * 不会存在如 `foo/bar/baz` 之类的子分类
 * 每小时更新一次结果
-    * 受欢迎的商品越多，就需要更频繁地更新
+  * 受欢迎的商品越多，就需要更频繁地更新
 * 1000 万个商品
 * 1000 个分类
 * 每个月 10 亿次交易
@@ -44,18 +42,18 @@
 **如果你需要进行粗略的用量计算，请向你的面试官说明。**
 
 * 每笔交易的用量：
-    * `created_at` - 5 字节
-    * `product_id` - 8 字节
-    * `category_id` - 4 字节
-    * `seller_id` - 8 字节
-    * `buyer_id` - 8 字节
-    * `quantity` - 4 字节
-    * `total_price` - 5 字节
-    * 总计：大约 40 字节
+  * `created_at` - 5 字节
+  * `product_id` - 8 字节
+  * `category_id` - 4 字节
+  * `seller_id` - 8 字节
+  * `buyer_id` - 8 字节
+  * `quantity` - 4 字节
+  * `total_price` - 5 字节
+  * 总计：大约 40 字节
 * 每个月的交易内容会产生 40 GB 的记录
-    * 每次交易 40 字节 * 每个月 10 亿次交易
-    * 3年内产生了 1.44 TB 的新交易内容记录
-    * 假定大多数的交易都是新交易而不是更改以前进行完的交易
+  * 每次交易 40 字节 \* 每个月 10 亿次交易
+  * 3年内产生了 1.44 TB 的新交易内容记录
+  * 假定大多数的交易都是新交易而不是更改以前进行完的交易
 * 平均每秒 400 次交易次数
 * 平均每秒 40,000 次读取请求
 
@@ -84,7 +82,7 @@
 
 假设下面是一个用 tab 分割的简易的日志记录：
 
-```
+```text
 timestamp   product_id  category_id    qty     total_price   seller_id    buyer_id
 t1          product1    category1      2       20.00         1            1
 t2          product1    category2      2       20.00         2            2
@@ -177,7 +175,7 @@ class SalesRanker(MRJob):
 
 得到的结果将会是如下的排序列，我们将其插入 `sales_rank` 表中：
 
-```
+```text
 (category1, 1), product4
 (category1, 2), product1
 (category1, 3), product2
@@ -187,7 +185,7 @@ class SalesRanker(MRJob):
 
 `sales_rank` 表的数据结构如下：
 
-```
+```text
 id int NOT NULL AUTO_INCREMENT
 category_id int NOT NULL
 total_sold int NOT NULL
@@ -197,7 +195,7 @@ FOREIGN KEY(category_id) REFERENCES Categories(id)
 FOREIGN KEY(product_id) REFERENCES Products(id)
 ```
 
-我们会以 `id`、`category_id` 与 `product_id` 创建一个 [索引](https://github.com/donnemartin/system-design-primer#use-good-indices)以加快查询速度（只需要使用读取日志的时间，不再需要每次都扫描整个数据表）并让数据常驻内存。从内存读取 1 MB 连续数据大约要花 250 微秒，而从 SSD 读取同样大小的数据要花费 4 倍的时间，从机械硬盘读取需要花费 80 倍以上的时间。<sup><a href=https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#每个程序员都应该知道的延迟数>1</a></sup>
+我们会以 `id`、`category_id` 与 `product_id` 创建一个 [索引](https://github.com/donnemartin/system-design-primer#use-good-indices)以加快查询速度（只需要使用读取日志的时间，不再需要每次都扫描整个数据表）并让数据常驻内存。从内存读取 1 MB 连续数据大约要花 250 微秒，而从 SSD 读取同样大小的数据要花费 4 倍的时间，从机械硬盘读取需要花费 80 倍以上的时间。[1](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#每个程序员都应该知道的延迟数)
 
 ### 用例：用户需要根据分类浏览上周中最受欢迎的商品
 
@@ -207,13 +205,13 @@ FOREIGN KEY(product_id) REFERENCES Products(id)
 
 我们可以调用一个公共的 [REST API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)：
 
-```
+```text
 $ curl https://amazon.com/api/v1/popular?category_id=1234
 ```
 
 返回：
 
-```
+```text
 {
     "id": "100",
     "category_id": "1234",
@@ -244,7 +242,7 @@ $ curl https://amazon.com/api/v1/popular?category_id=1234
 
 **重要提示：不要从最初设计直接跳到最终设计中！**
 
-现在你要 1) **基准测试、负载测试**。2) **分析、描述**性能瓶颈。3) 在解决瓶颈问题的同时，评估替代方案、权衡利弊。4) 重复以上步骤。请阅读[「设计一个系统，并将其扩大到为数以百万计的 AWS 用户服务」](../scaling_aws/README.md) 来了解如何逐步扩大初始设计。
+现在你要 1\) **基准测试、负载测试**。2\) **分析、描述**性能瓶颈。3\) 在解决瓶颈问题的同时，评估替代方案、权衡利弊。4\) 重复以上步骤。请阅读[「设计一个系统，并将其扩大到为数以百万计的 AWS 用户服务」](../scaling_aws/) 来了解如何逐步扩大初始设计。
 
 讨论初始设计可能遇到的瓶颈及相关解决方案是很重要的。例如加上一个配置多台 **Web 服务器**的**负载均衡器**是否能够解决问题？**CDN**呢？**主从复制**呢？它们各自的替代方案和需要**权衡**的利弊又有什么呢？
 
@@ -258,7 +256,7 @@ $ curl https://amazon.com/api/v1/popular?category_id=1234
 * [反向代理（web 服务器）](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#反向代理web-服务器)
 * [API 服务（应用层）](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用层)
 * [缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存)
-* [关系型数据库管理系统 (RDBMS)](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#关系型数据库管理系统rdbms)
+* [关系型数据库管理系统 \(RDBMS\)](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#关系型数据库管理系统rdbms)
 * [SQL 故障主从切换](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#故障切换)
 * [主从复制](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#主从复制)
 * [一致性模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#一致性模式)
@@ -296,19 +294,19 @@ SQL 缩放模式包括：
 ### 缓存
 
 * 在哪缓存
-    * [客户端缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#客户端缓存)
-    * [CDN 缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#cdn-缓存)
-    * [Web 服务器缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#web-服务器缓存)
-    * [数据库缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库缓存)
-    * [应用缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用缓存)
+  * [客户端缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#客户端缓存)
+  * [CDN 缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#cdn-缓存)
+  * [Web 服务器缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#web-服务器缓存)
+  * [数据库缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库缓存)
+  * [应用缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#应用缓存)
 * 什么需要缓存
-    * [数据库查询级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库查询级别的缓存)
-    * [对象级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#对象级别的缓存)
+  * [数据库查询级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#数据库查询级别的缓存)
+  * [对象级别的缓存](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#对象级别的缓存)
 * 何时更新缓存
-    * [缓存模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存模式)
-    * [直写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#直写模式)
-    * [回写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#回写模式)
-    * [刷新](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#刷新)
+  * [缓存模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#缓存模式)
+  * [直写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#直写模式)
+  * [回写模式](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#回写模式)
+  * [刷新](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#刷新)
 
 ### 异步与微服务
 
@@ -320,8 +318,8 @@ SQL 缩放模式包括：
 ### 通信
 
 * 可权衡选择的方案：
-    * 与客户端的外部通信 - [使用 REST 作为 HTTP API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)
-    * 服务器内部通信 - [RPC](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
+  * 与客户端的外部通信 - [使用 REST 作为 HTTP API](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#表述性状态转移rest)
+  * 服务器内部通信 - [RPC](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#远程过程调用协议rpc)
 * [服务发现](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md#服务发现)
 
 ### 安全性
@@ -336,3 +334,4 @@ SQL 缩放模式包括：
 
 * 持续进行基准测试并监控你的系统，以解决他们提出的瓶颈问题。
 * 架构拓展是一个迭代的过程。
+
